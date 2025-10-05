@@ -1,4 +1,6 @@
-# Cloudflare MCP Server (Python + uv)
+<img src="https://github.com/ry-ops/cloudflare-mcp-server/blob/main/cloudflare-mcp-server.png" width="100%">
+
+# Cloudflare MCP Server
 
 A Model Context Protocol (MCP) server that provides seamless integration with the Cloudflare API. Built with Python and managed with `uv` for blazing-fast dependency management.
 
