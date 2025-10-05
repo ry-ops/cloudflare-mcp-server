@@ -1,5 +1,11 @@
 <img src="https://github.com/ry-ops/cloudflare-mcp-server/blob/main/cloudflare-mcp-server.png" width="100%">
 
+[![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![uv](https://img.shields.io/badge/uv-latest-green.svg)](https://github.com/astral-sh/uv)
+[![MCP](https://img.shields.io/badge/MCP-1.0-purple.svg)](https://modelcontextprotocol.io/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
 # Cloudflare MCP Server
 
 A Model Context Protocol (MCP) server that provides seamless integration with the Cloudflare API. Built with Python and managed with `uv` for blazing-fast dependency management.
