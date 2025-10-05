@@ -1,3 +1,5 @@
+<img src="https://github.com/ry-ops/cloudflare-mcp-server/blob/main/cloudflare-mcp-server.png" width="100%">
+
 # Cloudflare MCP Server
 
 A Model Context Protocol (MCP) server that provides seamless integration with the Cloudflare API. This server enables AI assistants to manage Cloudflare resources including zones, DNS records, Workers KV storage, cache purging, and analytics.
