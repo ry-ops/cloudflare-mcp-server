@@ -10,6 +10,10 @@
 
 A Model Context Protocol (MCP) server that provides seamless integration with the Cloudflare API. Built with Python and managed with `uv` for blazing-fast dependency management.
 
+<a href="https://glama.ai/mcp/servers/@ry-ops/cloudflare-mcp-server">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@ry-ops/cloudflare-mcp-server/badge" alt="Cloudflare Server MCP server" />
+</a>
+
 ## Features
 
 ### 🌐 Zone Management
