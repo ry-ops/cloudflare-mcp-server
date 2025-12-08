@@ -1,0 +1,401 @@
+{
+  "name": "Cloudflare MCP Agent",
+  "description": "A Model Context Protocol (MCP) agent that provides seamless integration with the Cloudflare API. Manages DNS, zones, Workers KV storage, cache operations, and analytics through standardized agent-to-agent communication.",
+  "version": "1.0.0",
+  "protocol": "A2A",
+  "url": "stdio://cloudflare-mcp-server",
+  "capabilities": {
+    "streaming": true,
+    "tasks": true,
+    "async": true,
+    "batch_operations": false
+  },
+  "skills": [
+    {
+      "name": "zone_management",
+      "description": "Manage Cloudflare zones (domains) including listing, querying, and retrieving detailed zone information",
+      "operations": [
+        {
+          "name": "list_zones",
+          "description": "List all zones in the Cloudflare account with optional filtering by name and status",
+          "parameters": {
+            "name": {
+              "type": "string",
+              "required": false,
+              "description": "Filter zones by name"
+            },
+            "status": {
+              "type": "string",
+              "required": false,
+              "enum": ["active", "pending", "initializing", "moved", "deleted", "deactivated"],
+              "description": "Filter by zone status"
+            },
+            "page": {
+              "type": "number",
+              "required": false,
+              "description": "Page number for pagination"
+            },
+            "per_page": {
+              "type": "number",
+              "required": false,
+              "description": "Number of zones per page (max: 50)"
+            }
+          }
+        },
+        {
+          "name": "get_zone",
+          "description": "Get detailed information about a specific zone",
+          "parameters": {
+            "zone_id": {
+              "type": "string",
+              "required": true,
+              "description": "The zone ID to query"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "dns_management",
+      "description": "Comprehensive DNS record management including creation, updates, deletion, and querying of all DNS record types",
+      "operations": [
+        {
+          "name": "list_dns_records",
+          "description": "List DNS records for a zone with optional filtering",
+          "parameters": {
+            "zone_id": {
+              "type": "string",
+              "required": true,
+              "description": "The zone ID"
+            },
+            "type": {
+              "type": "string",
+              "required": false,
+              "description": "DNS record type (A, AAAA, CNAME, TXT, MX, etc.)"
+            },
+            "name": {
+              "type": "string",
+              "required": false,
+              "description": "DNS record name to filter by"
+            },
+            "content": {
+              "type": "string",
+              "required": false,
+              "description": "DNS record content to filter by"
+            }
+          }
+        },
+        {
+          "name": "create_dns_record",
+          "description": "Create a new DNS record with full support for all record types and Cloudflare features",
+          "parameters": {
+            "zone_id": {
+              "type": "string",
+              "required": true,
+              "description": "The zone ID"
+            },
+            "type": {
+              "type": "string",
+              "required": true,
+              "description": "DNS record type"
+            },
+            "name": {
+              "type": "string",
+              "required": true,
+              "description": "DNS record name"
+            },
+            "content": {
+              "type": "string",
+              "required": true,
+              "description": "DNS record content"
+            },
+            "ttl": {
+              "type": "number",
+              "required": false,
+              "description": "Time to live (1 = automatic)"
+            },
+            "proxied": {
+              "type": "boolean",
+              "required": false,
+              "description": "Whether to proxy through Cloudflare"
+            }
+          }
+        },
+        {
+          "name": "update_dns_record",
+          "description": "Update an existing DNS record",
+          "parameters": {
+            "zone_id": {
+              "type": "string",
+              "required": true,
+              "description": "The zone ID"
+            },
+            "record_id": {
+              "type": "string",
+              "required": true,
+              "description": "The DNS record ID"
+            },
+            "type": {
+              "type": "string",
+              "required": true,
+              "description": "DNS record type"
+            },
+            "name": {
+              "type": "string",
+              "required": true,
+              "description": "DNS record name"
+            },
+            "content": {
+              "type": "string",
+              "required": true,
+              "description": "DNS record content"
+            }
+          }
+        },
+        {
+          "name": "delete_dns_record",
+          "description": "Delete a DNS record from a zone",
+          "parameters": {
+            "zone_id": {
+              "type": "string",
+              "required": true,
+              "description": "The zone ID"
+            },
+            "record_id": {
+              "type": "string",
+              "required": true,
+              "description": "The DNS record ID to delete"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "kv_storage",
+      "description": "Workers KV key-value storage operations for distributed data storage with metadata support",
+      "operations": [
+        {
+          "name": "list_kv_namespaces",
+          "description": "List all Workers KV namespaces in the account",
+          "parameters": {
+            "account_id": {
+              "type": "string",
+              "required": false,
+              "description": "Account ID (uses default from config if not provided)"
+            }
+          }
+        },
+        {
+          "name": "read_kv_value",
+          "description": "Read a value from KV storage by key",
+          "parameters": {
+            "namespace_id": {
+              "type": "string",
+              "required": true,
+              "description": "The KV namespace ID"
+            },
+            "key": {
+              "type": "string",
+              "required": true,
+              "description": "The key to read"
+            },
+            "account_id": {
+              "type": "string",
+              "required": false,
+              "description": "Account ID (uses default from config if not provided)"
+            }
+          }
+        },
+        {
+          "name": "write_kv_value",
+          "description": "Write a key-value pair to KV storage with optional TTL and metadata",
+          "parameters": {
+            "namespace_id": {
+              "type": "string",
+              "required": true,
+              "description": "The KV namespace ID"
+            },
+            "key": {
+              "type": "string",
+              "required": true,
+              "description": "The key to write"
+            },
+            "value": {
+              "type": "string",
+              "required": true,
+              "description": "The value to store"
+            },
+            "expiration_ttl": {
+              "type": "number",
+              "required": false,
+              "description": "Number of seconds for the key to expire"
+            },
+            "metadata": {
+              "type": "object",
+              "required": false,
+              "description": "Arbitrary JSON metadata"
+            }
+          }
+        },
+        {
+          "name": "delete_kv_value",
+          "description": "Delete a key from KV storage",
+          "parameters": {
+            "namespace_id": {
+              "type": "string",
+              "required": true,
+              "description": "The KV namespace ID"
+            },
+            "key": {
+              "type": "string",
+              "required": true,
+              "description": "The key to delete"
+            }
+          }
+        },
+        {
+          "name": "list_kv_keys",
+          "description": "List all keys in a KV namespace with prefix filtering",
+          "parameters": {
+            "namespace_id": {
+              "type": "string",
+              "required": true,
+              "description": "The KV namespace ID"
+            },
+            "prefix": {
+              "type": "string",
+              "required": false,
+              "description": "Filter keys by prefix"
+            },
+            "limit": {
+              "type": "number",
+              "required": false,
+              "description": "Maximum number of keys to return"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "cache_management",
+      "description": "Cloudflare cache purging and invalidation operations",
+      "operations": [
+        {
+          "name": "purge_cache",
+          "description": "Purge cached content by zone, specific files, tags, or hosts",
+          "parameters": {
+            "zone_id": {
+              "type": "string",
+              "required": true,
+              "description": "The zone ID"
+            },
+            "purge_everything": {
+              "type": "boolean",
+              "required": false,
+              "description": "Purge all cached content for the zone"
+            },
+            "files": {
+              "type": "array",
+              "required": false,
+              "description": "Array of URLs to purge"
+            },
+            "tags": {
+              "type": "array",
+              "required": false,
+              "description": "Array of cache tags to purge"
+            },
+            "hosts": {
+              "type": "array",
+              "required": false,
+              "description": "Array of hosts to purge"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "analytics",
+      "description": "Zone analytics and performance metrics retrieval",
+      "operations": [
+        {
+          "name": "get_zone_analytics",
+          "description": "Get analytics data including requests, bandwidth, threats, and pageviews",
+          "parameters": {
+            "zone_id": {
+              "type": "string",
+              "required": true,
+              "description": "The zone ID"
+            },
+            "since": {
+              "type": "string",
+              "required": false,
+              "description": "Start time (ISO 8601 format or relative like '-1440')"
+            },
+            "until": {
+              "type": "string",
+              "required": false,
+              "description": "End time (ISO 8601 format or relative like '-0')"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "authentication": {
+    "type": "bearer_token",
+    "required": true,
+    "env_variables": {
+      "CLOUDFLARE_API_TOKEN": {
+        "required": true,
+        "description": "Cloudflare API token with appropriate permissions"
+      },
+      "CLOUDFLARE_ACCOUNT_ID": {
+        "required": false,
+        "description": "Cloudflare account ID (required for KV operations)"
+      }
+    },
+    "permissions": {
+      "minimum": [
+        "Zone - Zone - Read",
+        "Zone - DNS - Edit"
+      ],
+      "recommended": [
+        "Zone - Zone - Read",
+        "Zone - DNS - Edit",
+        "Account - Workers KV Storage - Edit",
+        "Zone - Cache Purge - Purge",
+        "Zone - Analytics - Read"
+      ]
+    }
+  },
+  "transport": {
+    "type": "stdio",
+    "commands": {
+      "uv": {
+        "command": "uv",
+        "args": ["--directory", "/path/to/cloudflare-mcp-server", "run", "cloudflare-mcp-server"],
+        "description": "Recommended: Run using uv for faster dependency management"
+      },
+      "python": {
+        "command": "python",
+        "args": ["-m", "cloudflare_mcp_server"],
+        "description": "Alternative: Run using Python directly"
+      }
+    }
+  },
+  "dependencies": {
+    "python": ">=3.10",
+    "packages": [
+      "mcp>=1.1.2",
+      "httpx>=0.27.0"
+    ]
+  },
+  "metadata": {
+    "license": "MIT",
+    "repository": "https://github.com/ry-ops/cloudflare-mcp-server",
+    "documentation": "https://github.com/ry-ops/cloudflare-mcp-server/blob/main/README.md",
+    "examples": "https://github.com/ry-ops/cloudflare-mcp-server/blob/main/EXAMPLES.md",
+    "tags": ["cloudflare", "dns", "cdn", "workers", "kv-storage", "cache", "analytics"],
+    "category": "infrastructure"
+  }
+}

@@ -168,6 +168,161 @@ The server provides 13 powerful tools for managing Cloudflare resources:
 
 For detailed documentation on each tool, see [EXAMPLES.md](EXAMPLES.md).
 
+## Agent-to-Agent (A2A) Protocol Support
+
+This MCP server implements the Agent-to-Agent (A2A) protocol, enabling seamless communication between AI agents and autonomous systems. The A2A protocol standardizes how agents discover capabilities, authenticate, and execute operations across distributed systems.
+
+### Agent Card
+
+The agent card is located at `agent-card.json` in the root directory. It provides a machine-readable description of:
+
+- **Agent capabilities**: Streaming support, async operations, task management
+- **Available skills**: 5 skill categories with 13 operations total
+- **Authentication requirements**: Bearer token configuration
+- **Transport protocols**: stdio-based communication via uv or Python
+- **API schema**: Complete parameter definitions for all operations
+
+### Skills for Agent-to-Agent Communication
+
+The Cloudflare MCP Agent exposes the following skills through the A2A protocol:
+
+#### 1. Zone Management
+Manage Cloudflare zones (domains) including listing and detailed queries.
+- `list_zones` - List all zones with filtering options
+- `get_zone` - Retrieve detailed zone information
+
+#### 2. DNS Management
+Comprehensive DNS record operations supporting all record types (A, AAAA, CNAME, TXT, MX, etc.).
+- `list_dns_records` - Query DNS records with filters
+- `create_dns_record` - Create new DNS records with Cloudflare proxy support
+- `update_dns_record` - Modify existing DNS records
+- `delete_dns_record` - Remove DNS records
+
+#### 3. Workers KV Storage
+Distributed key-value storage with metadata and TTL support.
+- `list_kv_namespaces` - List all KV namespaces
+- `read_kv_value` - Retrieve values by key
+- `write_kv_value` - Store key-value pairs with optional expiration
+- `delete_kv_value` - Delete keys
+- `list_kv_keys` - List keys with prefix filtering
+
+#### 4. Cache Management
+Cloudflare cache purging and invalidation.
+- `purge_cache` - Purge by zone, files, tags, or hosts
+
+#### 5. Analytics
+Zone performance metrics and analytics.
+- `get_zone_analytics` - Get requests, bandwidth, threats, and pageviews
+
+### A2A Integration Examples
+
+#### Example 1: Agent-to-Agent DNS Management
+
+An orchestrator agent can delegate DNS management to this Cloudflare agent:
+
+```json
+{
+  "agent": "cloudflare-mcp-agent",
+  "skill": "dns_management",
+  "operation": "create_dns_record",
+  "parameters": {
+    "zone_id": "abc123",
+    "type": "A",
+    "name": "api",
+    "content": "192.0.2.100",
+    "proxied": true
+  }
+}
+```
+
+#### Example 2: Multi-Agent Cache Invalidation
+
+A deployment agent can coordinate with this Cloudflare agent for cache invalidation:
+
+```json
+{
+  "workflow": "deploy-and-invalidate",
+  "steps": [
+    {
+      "agent": "deployment-agent",
+      "action": "deploy_assets"
+    },
+    {
+      "agent": "cloudflare-mcp-agent",
+      "skill": "cache_management",
+      "operation": "purge_cache",
+      "parameters": {
+        "zone_id": "abc123",
+        "files": ["https://example.com/app.js", "https://example.com/style.css"]
+      }
+    }
+  ]
+}
+```
+
+#### Example 3: KV Storage for Inter-Agent Communication
+
+Agents can use KV storage for shared state:
+
+```json
+{
+  "agent": "cloudflare-mcp-agent",
+  "skill": "kv_storage",
+  "operation": "write_kv_value",
+  "parameters": {
+    "namespace_id": "kv123",
+    "key": "agent-state:orchestrator",
+    "value": "{\"status\": \"processing\", \"tasks\": 5}",
+    "metadata": {
+      "agent": "orchestrator-v1",
+      "timestamp": "2025-12-08T15:00:00Z"
+    }
+  }
+}
+```
+
+### A2A Authentication
+
+When integrating with other agents, ensure the following environment variables are set:
+
+```bash
+export CLOUDFLARE_API_TOKEN="your_api_token_here"
+export CLOUDFLARE_ACCOUNT_ID="your_account_id_here"  # Required for KV operations
+```
+
+The agent card specifies the minimum and recommended Cloudflare API permissions required for different operations.
+
+### Discovering Agent Capabilities
+
+Other agents can discover this agent's capabilities by reading the `agent-card.json` file:
+
+```python
+import json
+
+# Load agent card
+with open("agent-card.json") as f:
+    agent_card = json.load(f)
+
+# Discover available skills
+for skill in agent_card["skills"]:
+    print(f"Skill: {skill['name']}")
+    for operation in skill["operations"]:
+        print(f"  - {operation['name']}: {operation['description']}")
+```
+
+### A2A Protocol Compliance
+
+This agent implements the following A2A protocol features:
+
+- Structured agent card with capabilities and skills
+- Standardized skill and operation definitions
+- Type-safe parameter schemas
+- Authentication and authorization declarations
+- Transport protocol specifications (stdio)
+- Error handling and status reporting via MCP
+
+For more information on the A2A protocol, see the agent card specification in `agent-card.json`.
+
 ## Development
 
 ### Using uv for Development
