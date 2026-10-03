@@ -356,7 +356,6 @@ cloudflare-mcp-server/
 ├── README.md                 # This file
 ├── QUICKSTART.md            # Quick start guide
 ├── EXAMPLES.md              # Usage examples
-└── .env.example             # Environment template
 ```
 
 ## Usage Examples
@@ -449,3 +448,8 @@ For issues related to:
 - **Cloudflare API**: Check [Cloudflare Developer Docs](https://developers.cloudflare.com/)
 - **MCP Protocol**: Check [MCP Documentation](https://modelcontextprotocol.io/)
 - **uv**: Check [uv Documentation](https://github.com/astral-sh/uv)
+
+<!-- org-footer -->
+---
+
+<p align="center"><sub>Part of <a href="https://github.com/ry-ops">ry-ops</a> · building the pipes between infrastructure, automation, and observability · built by <a href="https://github.com/ry-ops">ry-ops</a></sub></p>
