@@ -1,453 +1,119 @@
-<img src="https://github.com/ry-ops/cloudflare-mcp-server/blob/main/cloudflare-mcp-server.png" width="100%">
+<p align="center">
+  <img src="docs/hero.svg" width="100%" alt="You ask to point staging at 203.0.113.10 and purge the cache; list_zones, create_dns_record and purge_cache run, a new proxied A record appears in the DNS table and a purge wave sweeps across.">
+</p>
 
-[![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![uv](https://img.shields.io/badge/uv-latest-green.svg)](https://github.com/astral-sh/uv)
-[![MCP](https://img.shields.io/badge/MCP-1.0-purple.svg)](https://modelcontextprotocol.io/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+<p align="center">
+  <img src="https://img.shields.io/badge/tools-13-f6821f" alt="13 tools">
+  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.10+-3ec7ff" alt="Python 3.10+"></a>
+  <a href="https://modelcontextprotocol.io/"><img src="https://img.shields.io/badge/MCP-stdio-b58cff" alt="MCP"></a>
+  <img src="https://img.shields.io/badge/A2A-agent%20card-ffb02e" alt="A2A agent card">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-8b96ad" alt="MIT"></a>
+</p>
 
-# Cloudflare MCP Server
+<p align="center"><b>Run Cloudflare from a conversation.</b> An MCP server that lets Claude, or any MCP client, manage your zones, DNS records, cache and Workers KV through the Cloudflare API, in plain English.</p>
 
-A Model Context Protocol (MCP) server that provides seamless integration with the Cloudflare API. Built with Python and managed with `uv` for blazing-fast dependency management.
+---
 
-## Features
+## ✨ Ask things like
 
-### 🌐 Zone Management
-- List all zones in your account
-- Get detailed zone information
-- Filter zones by name and status
+> *"List my zones."*
+> *"Point staging.example.com at 203.0.113.10, proxied, then purge the cache."*
+> *"Which DNS records point at the old server?"*
+> *"Purge just /assets/app.css."*
+> *"How much traffic and how many threats did example.com see this week?"*
+> *"Store `maintenance=true` in the `flags` KV namespace."*
 
-### 🔧 DNS Management
-- List DNS records with filtering
-- Create new DNS records (A, AAAA, CNAME, TXT, MX, etc.)
-- Update existing records
-- Delete records
-- Full support for proxied records and TTL configuration
+## 🧰 13 tools, and the permissions they need
 
-### 💾 Workers KV Storage
-- List KV namespaces
-- Read values from KV
-- Write key-value pairs with optional TTL
-- Delete keys
-- List keys with prefix filtering
-- Support for metadata
+<p align="center">
+  <img src="docs/permissions.svg" width="100%" alt="13 tools in five groups, each with its Cloudflare token permission: Zone Read, DNS Edit, Workers KV Storage Edit, Cache Purge, Analytics Read. The minimum token is Zone Read plus DNS Edit.">
+</p>
 
-### ⚡ Cache & Performance
-- Purge cache (entire zone or specific files/tags/hosts)
-- Get zone analytics (requests, bandwidth, threats)
+| Group | Tools | Token permission |
+|---|---|---|
+| **Zones** | `list_zones`, `get_zone` | Zone · Zone · Read |
+| **DNS** | `list_dns_records` (filter by type, name or content), `create_dns_record`, `update_dns_record`, `delete_dns_record` | Zone · DNS · Edit |
+| **Workers KV** | `list_kv_namespaces`, `list_kv_keys`, `read_kv_value`, `write_kv_value`, `delete_kv_value` | Account · Workers KV Storage · Edit, plus `CLOUDFLARE_ACCOUNT_ID` |
+| **Cache** | `purge_cache` (everything, or specific files, tags or hosts) | Zone · Cache Purge · Purge |
+| **Analytics** | `get_zone_analytics` (requests, bandwidth, threats, pageviews) | Zone · Analytics · Read |
 
-## Installation
+Seven tools only read. **Six change things:** creating, updating or deleting DNS records, purging the cache, and writing or deleting KV keys. A token without a permission can't use those tools, so grant only what you need.
 
-### Prerequisites
-- Python 3.10 or higher
-- [uv](https://github.com/astral-sh/uv) installed
-- A Cloudflare account with an API token
+## 🚀 Setup
 
-### Quick Start with uv
+**1. Create an API token.** In the Cloudflare dashboard, go to **My Profile → API Tokens → Create Token**. Start from the **Edit zone DNS** template, or build a custom token from the table above. Limit it to the zones you want the server to touch.
 
-1. **Clone or create the project:**
+**2. Find your Account ID** (Workers KV only). It's on any zone's **Overview** page, in the right-hand column.
+
+**3. Install.** You need **Python 3.10+** and [`uv`](https://github.com/astral-sh/uv).
+
 ```bash
-mkdir cloudflare-mcp-server
+git clone https://github.com/ry-ops/cloudflare-mcp-server
 cd cloudflare-mcp-server
+uv sync
 ```
 
-2. **Install with uv:**
-```bash
-uv pip install -e .
-```
-
-Or install from the directory:
-```bash
-uv pip install cloudflare-mcp-server
-```
-
-### Alternative: Using pip
-
-```bash
-pip install -e .
-```
-
-## Configuration
-
-### Getting Your Cloudflare Credentials
-
-1. **API Token** (Required):
-   - Go to [Cloudflare Dashboard](https://dash.cloudflare.com/profile/api-tokens)
-   - Click "Create Token"
-   - Use "Edit zone DNS" template or create a custom token with the permissions you need
-   - Copy the token
-
-2. **Account ID** (Optional, but required for KV operations):
-   - Go to your Cloudflare dashboard
-   - Select any website
-   - Scroll down on the Overview page to find your Account ID
-
-### Environment Variables
-
-Set the following environment variables:
-
-```bash
-export CLOUDFLARE_API_TOKEN="your_api_token_here"
-export CLOUDFLARE_ACCOUNT_ID="your_account_id_here"  # Optional, needed for KV
-```
-
-Or create a `.env` file (see `.env.example`).
-
-### Claude Desktop Configuration
-
-Add to your Claude Desktop config file:
-
-**macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
-**Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
-
-#### Using uv (recommended):
+**4. Connect Claude Desktop.** Add this to `claude_desktop_config.json`: `~/Library/Application Support/Claude/` on macOS, or `%APPDATA%\Claude\` on Windows.
 
 ```json
 {
   "mcpServers": {
     "cloudflare": {
       "command": "uv",
-      "args": [
-        "--directory",
-        "/absolute/path/to/cloudflare-mcp-server",
-        "run",
-        "cloudflare-mcp-server"
-      ],
+      "args": ["--directory", "/absolute/path/to/cloudflare-mcp-server", "run", "cloudflare-mcp-server"],
       "env": {
-        "CLOUDFLARE_API_TOKEN": "your_api_token_here",
-        "CLOUDFLARE_ACCOUNT_ID": "your_account_id_here"
+        "CLOUDFLARE_API_TOKEN": "your_api_token",
+        "CLOUDFLARE_ACCOUNT_ID": "your_account_id"
       }
     }
   }
 }
 ```
 
-#### Using Python directly:
+The server reads **only environment variables**: `CLOUDFLARE_API_TOKEN` (required) and `CLOUDFLARE_ACCOUNT_ID` (for KV). Quit and reopen Claude Desktop to load it. There are more examples in [EXAMPLES.md](EXAMPLES.md), and a short walkthrough in [QUICKSTART.md](QUICKSTART.md).
 
-```json
-{
-  "mcpServers": {
-    "cloudflare": {
-      "command": "python",
-      "args": ["-m", "cloudflare_mcp_server"],
-      "env": {
-        "CLOUDFLARE_API_TOKEN": "your_api_token_here",
-        "CLOUDFLARE_ACCOUNT_ID": "your_account_id_here"
-      }
-    }
-  }
-}
-```
+## 🔒 Security
 
-## Available Tools
+- **Scope the token** to specific zones and only the permissions you need. The **Edit zone DNS** template plus Zone Read is enough for most DNS work.
+- **Keep your MCP client's tool approval on.** Deleting DNS records and purging cache take effect immediately.
+- **Keep the token out of git.** Put it in your client's `env` block, or in a secrets manager.
 
-The server provides 13 powerful tools for managing Cloudflare resources:
+## 🤝 Agent-to-agent (A2A)
 
-### Zone Operations
-- `list_zones` - List all zones (domains) with optional filtering
-- `get_zone` - Get detailed information about a specific zone
+[`agent-card.json`](agent-card.json) describes the server to other agents. It has five skills (zone management, DNS management, KV storage, cache management and analytics), and the **minimum** and **recommended** token permissions for each.
 
-### DNS Operations
-- `list_dns_records` - List DNS records with filtering
-- `create_dns_record` - Create new DNS records
-- `update_dns_record` - Update existing DNS records
-- `delete_dns_record` - Delete DNS records
+## 🩺 Troubleshooting
 
-### Cache Operations
-- `purge_cache` - Purge cached content (entire zone or specific files/tags/hosts)
+<details>
+<summary><b>401 or 403 from Cloudflare</b></summary>
 
-### Workers KV Operations
-- `list_kv_namespaces` - List all KV namespaces
-- `read_kv_value` - Read a value from KV storage
-- `write_kv_value` - Write a key-value pair to KV
-- `delete_kv_value` - Delete a key from KV
-- `list_kv_keys` - List all keys in a namespace
+The token is wrong or is missing a permission for that tool. Check it against the table above, and that its zone resources include the zone you asked about.
+</details>
 
-### Analytics
-- `get_zone_analytics` - Get analytics data for a zone
+<details>
+<summary><b>KV tools fail but DNS works</b></summary>
 
-For detailed documentation on each tool, see [EXAMPLES.md](EXAMPLES.md).
+Set `CLOUDFLARE_ACCOUNT_ID`, and give the token **Account · Workers KV Storage · Edit**.
+</details>
 
-## Agent-to-Agent (A2A) Protocol Support
+<details>
+<summary><b>"cloudflare" doesn't show up in Claude</b></summary>
 
-This MCP server implements the Agent-to-Agent (A2A) protocol, enabling seamless communication between AI agents and autonomous systems. The A2A protocol standardizes how agents discover capabilities, authenticate, and execute operations across distributed systems.
+Use an absolute path in `--directory`, run `uv sync` once in the project, check the JSON is valid, and quit Claude Desktop completely before reopening it.
+</details>
 
-### Agent Card
-
-The agent card is located at `agent-card.json` in the root directory. It provides a machine-readable description of:
-
-- **Agent capabilities**: Streaming support, async operations, task management
-- **Available skills**: 5 skill categories with 13 operations total
-- **Authentication requirements**: Bearer token configuration
-- **Transport protocols**: stdio-based communication via uv or Python
-- **API schema**: Complete parameter definitions for all operations
-
-### Skills for Agent-to-Agent Communication
-
-The Cloudflare MCP Agent exposes the following skills through the A2A protocol:
-
-#### 1. Zone Management
-Manage Cloudflare zones (domains) including listing and detailed queries.
-- `list_zones` - List all zones with filtering options
-- `get_zone` - Retrieve detailed zone information
-
-#### 2. DNS Management
-Comprehensive DNS record operations supporting all record types (A, AAAA, CNAME, TXT, MX, etc.).
-- `list_dns_records` - Query DNS records with filters
-- `create_dns_record` - Create new DNS records with Cloudflare proxy support
-- `update_dns_record` - Modify existing DNS records
-- `delete_dns_record` - Remove DNS records
-
-#### 3. Workers KV Storage
-Distributed key-value storage with metadata and TTL support.
-- `list_kv_namespaces` - List all KV namespaces
-- `read_kv_value` - Retrieve values by key
-- `write_kv_value` - Store key-value pairs with optional expiration
-- `delete_kv_value` - Delete keys
-- `list_kv_keys` - List keys with prefix filtering
-
-#### 4. Cache Management
-Cloudflare cache purging and invalidation.
-- `purge_cache` - Purge by zone, files, tags, or hosts
-
-#### 5. Analytics
-Zone performance metrics and analytics.
-- `get_zone_analytics` - Get requests, bandwidth, threats, and pageviews
-
-### A2A Integration Examples
-
-#### Example 1: Agent-to-Agent DNS Management
-
-An orchestrator agent can delegate DNS management to this Cloudflare agent:
-
-```json
-{
-  "agent": "cloudflare-mcp-agent",
-  "skill": "dns_management",
-  "operation": "create_dns_record",
-  "parameters": {
-    "zone_id": "abc123",
-    "type": "A",
-    "name": "api",
-    "content": "192.0.2.100",
-    "proxied": true
-  }
-}
-```
-
-#### Example 2: Multi-Agent Cache Invalidation
-
-A deployment agent can coordinate with this Cloudflare agent for cache invalidation:
-
-```json
-{
-  "workflow": "deploy-and-invalidate",
-  "steps": [
-    {
-      "agent": "deployment-agent",
-      "action": "deploy_assets"
-    },
-    {
-      "agent": "cloudflare-mcp-agent",
-      "skill": "cache_management",
-      "operation": "purge_cache",
-      "parameters": {
-        "zone_id": "abc123",
-        "files": ["https://example.com/app.js", "https://example.com/style.css"]
-      }
-    }
-  ]
-}
-```
-
-#### Example 3: KV Storage for Inter-Agent Communication
-
-Agents can use KV storage for shared state:
-
-```json
-{
-  "agent": "cloudflare-mcp-agent",
-  "skill": "kv_storage",
-  "operation": "write_kv_value",
-  "parameters": {
-    "namespace_id": "kv123",
-    "key": "agent-state:orchestrator",
-    "value": "{\"status\": \"processing\", \"tasks\": 5}",
-    "metadata": {
-      "agent": "orchestrator-v1",
-      "timestamp": "2025-12-08T15:00:00Z"
-    }
-  }
-}
-```
-
-### A2A Authentication
-
-When integrating with other agents, ensure the following environment variables are set:
+## 🛠️ Development
 
 ```bash
-export CLOUDFLARE_API_TOKEN="your_api_token_here"
-export CLOUDFLARE_ACCOUNT_ID="your_account_id_here"  # Required for KV operations
+uv sync
+uv run cloudflare-mcp-server   # stdio server
 ```
 
-The agent card specifies the minimum and recommended Cloudflare API permissions required for different operations.
-
-### Discovering Agent Capabilities
-
-Other agents can discover this agent's capabilities by reading the `agent-card.json` file:
-
-```python
-import json
-
-# Load agent card
-with open("agent-card.json") as f:
-    agent_card = json.load(f)
-
-# Discover available skills
-for skill in agent_card["skills"]:
-    print(f"Skill: {skill['name']}")
-    for operation in skill["operations"]:
-        print(f"  - {operation['name']}: {operation['description']}")
-```
-
-### A2A Protocol Compliance
-
-This agent implements the following A2A protocol features:
-
-- Structured agent card with capabilities and skills
-- Standardized skill and operation definitions
-- Type-safe parameter schemas
-- Authentication and authorization declarations
-- Transport protocol specifications (stdio)
-- Error handling and status reporting via MCP
-
-For more information on the A2A protocol, see the agent card specification in `agent-card.json`.
-
-## Development
-
-### Using uv for Development
-
-```bash
-# Install in development mode with dev dependencies
-uv pip install -e ".[dev]"
-
-# Run the server directly
-uv run cloudflare-mcp-server
-
-# Run tests (when implemented)
-uv run pytest
-
-# Format code with ruff
-uv run ruff format src/
-
-# Lint code
-uv run ruff check src/
-```
-
-### Project Structure
-
-```
-cloudflare-mcp-server/
-├── src/
-│   └── cloudflare_mcp_server/
-│       └── __init__.py       # Main server implementation
-├── tests/                     # Tests (to be implemented)
-├── pyproject.toml            # Project configuration (uv-compatible)
-├── README.md                 # This file
-├── QUICKSTART.md            # Quick start guide
-├── EXAMPLES.md              # Usage examples
-```
-
-## Usage Examples
-
-### Example 1: List Your Zones
-
-**Ask Claude:**
-> "Show me all my Cloudflare zones"
-
-### Example 2: Create a DNS Record
-
-**Ask Claude:**
-> "Create an A record for api.example.com pointing to 192.0.2.100 with proxy enabled"
-
-### Example 3: Purge Cache
-
-**Ask Claude:**
-> "Clear the cache for https://example.com/style.css"
-
-For more examples, see [EXAMPLES.md](EXAMPLES.md).
-
-## API Permissions
-
-Your Cloudflare API token needs appropriate permissions based on what operations you want to perform:
-
-### Minimum Permissions:
-- **Zone - Zone - Read** (for listing zones)
-- **Zone - DNS - Edit** (for DNS operations)
-
-### Additional Permissions for Advanced Features:
-- **Account - Workers KV Storage - Edit** (for KV operations)
-- **Zone - Cache Purge - Purge** (for cache operations)
-- **Zone - Analytics - Read** (for analytics)
-
-## Troubleshooting
-
-### Common Issues
-
-1. **"CLOUDFLARE_API_TOKEN environment variable is required"**
-   - Make sure you've set the environment variable
-   - Check your Claude Desktop config has the correct token in the `env` section
-
-2. **"Account ID is required"**
-   - Set `CLOUDFLARE_ACCOUNT_ID` environment variable for KV operations
-   - Or pass `account_id` parameter directly in tool calls
-
-3. **uv command not found**
-   - Install uv: `curl -LsSf https://astral.sh/uv/install.sh | sh`
-   - Or use pip as an alternative
-
-4. **Module not found errors**
-   - Make sure you installed the package: `uv pip install -e .`
-   - Check you're in the right directory
-
-## Why uv?
-
-This project uses [uv](https://github.com/astral-sh/uv) because it's:
-- ⚡ **10-100x faster** than pip
-- 🔒 **More reliable** with better dependency resolution
-- 🎯 **Simpler** - one tool for everything
-- 🐍 **Modern** - built in Rust, designed for Python
-
-## Security Notes
-
-- **Never commit your API token to version control**
-- Store tokens securely using environment variables
-- Use API tokens instead of API keys (they're more secure and can be scoped)
-- Regularly rotate your API tokens
-- Use the minimum required permissions for your token
-
-## Contributing
-
-Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+All the code is in [`src/cloudflare_mcp_server/__init__.py`](src/cloudflare_mcp_server/__init__.py). See [CONTRIBUTING.md](CONTRIBUTING.md) and [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details.
-
-## Links
-
-- [Cloudflare API Documentation](https://developers.cloudflare.com/api/)
-- [Model Context Protocol](https://modelcontextprotocol.io/)
-- [uv - Python Package Manager](https://github.com/astral-sh/uv)
-- [Claude Desktop](https://claude.ai/download)
-
-## Support
-
-For issues related to:
-- **This MCP server**: Open an issue on GitHub
-- **Cloudflare API**: Check [Cloudflare Developer Docs](https://developers.cloudflare.com/)
-- **MCP Protocol**: Check [MCP Documentation](https://modelcontextprotocol.io/)
-- **uv**: Check [uv Documentation](https://github.com/astral-sh/uv)
+MIT. See [LICENSE](LICENSE).
 
 <!-- org-footer -->
 ---
